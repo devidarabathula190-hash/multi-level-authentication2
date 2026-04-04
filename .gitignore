@@ -1,0 +1,44 @@
+# Global
+.DS_Store
+Thumbs.db
+*.log
+registration_debug.log
+
+# Virtual Environments
+venv/
+.venv/
+env/
+**/venv/
+**/ .venv/
+**/env/
+**/Lib/
+**/Include/
+**/Scripts/
+
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Expo
+.expo/
+**/ .expo/
+dist/
+web-build/
+
+# Django
+__pycache__/
+**/*.pyc
+db.sqlite3
+media/
+staticfiles/
+
+# Native
+android/
+ios/
+*.jks
+*.p8
+*.p12
+
+# Local configs
+.env
+local_settings.py

@@ -1,0 +1,14 @@
+django
+djangorestframework
+django-cors-headers
+django-otp
+psycopg2-binary
+face_recognition
+opencv-python
+pillow
+pyjwt
+python-dotenv
+django-environ
+whitenoise
+gunicorn
+djangorestframework-simplejwt

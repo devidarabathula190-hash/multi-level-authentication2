@@ -4,7 +4,7 @@ import { logout } from '../store/authSlice';
 import { Platform } from 'react-native';
 
 // 👉 Your system IP
-const API_IP = '192.168.137.116';
+const API_IP = '192.168.1.34';
 
 // 👉 Handle Emulator vs Real Device
 const BASE_URL =

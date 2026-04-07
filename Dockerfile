@@ -8,19 +8,10 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies for dlib, opencv and psycopg2
-# - libgl1 and libglib2.0-0 are for OpenCV
-# - build-essential and cmake are for dlib
+# Install basic system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    libopenblas-dev \
-    liblapack-dev \
-    libx11-dev \
-    libgtk-3-dev \
     libgl1 \
     libglib2.0-0 \
-    python3-dev \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 

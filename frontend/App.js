@@ -34,7 +34,7 @@ function AppContainer() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator 
+      <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={user?.is_staff ? "AdminDashboard" : "UserDashboard"}
       >

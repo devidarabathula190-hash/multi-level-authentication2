@@ -42,3 +42,5 @@ ios/
 # Local configs
 .env
 local_settings.py
+ipconfig_output.txt
+*.txt

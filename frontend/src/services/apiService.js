@@ -3,14 +3,11 @@ import { store } from '../store';
 import { logout } from '../store/authSlice';
 import { Platform } from 'react-native';
 
-// 👉 Your system IP
-const API_IP = '192.168.1.34';
+// 👉 Your system IP (updated to match Expo session)
+const API_IP = '172.17.116.185';
 
-// 👉 Handle Emulator vs Real Device
-const BASE_URL =
-  Platform.OS === 'android'
-    ? `http://${API_IP}:8000/api`   // real device
-    : 'http://localhost:8000/api';  // web / iOS
+// 👉 Use the machine's IP for both real devices & emulator
+export const BASE_URL = `http://${API_IP}:8000/api`;
 
 // 👉 Create axios instance
 const api = axios.create({

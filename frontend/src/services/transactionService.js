@@ -1,4 +1,7 @@
 import api from './apiService';
+import { Platform } from 'react-native';
+import { store } from '../store';
+import { BASE_URL } from './apiService';
 
 const transactionService = {
   getReceivers: async () => {
@@ -8,12 +11,10 @@ const transactionService = {
     return await api.post('/transactions/initiate/', data);
   },
   verifyFace: async (txnId, faceData) => {
-    // Platform import is needed here if it's not available, but let's assume we pass a ready-to-use photo or handle it here
     const formData = new FormData();
-    
     const isWeb = typeof window !== 'undefined' && window.document;
+    const token = store.getState().auth.token;
 
-    // Use file upload if available (Native) - much faster & more reliable for large images
     if (!isWeb && faceData.uri) {
       formData.append('face_image', {
         uri: faceData.uri,
@@ -21,24 +22,32 @@ const transactionService = {
         type: 'image/jpeg',
       });
     } else if (faceData.base64) {
-      // Use base64 if no URI or on Web
       formData.append('face_image_base64', faceData.base64);
-    } else if (isWeb && faceData.uri) {
-      // For web blob URLs
-      const res = await fetch(faceData.uri);
-      const blob = await res.blob();
-      formData.append('face_image', blob, 'face.jpg');
     }
-    
-    // DO NOT set Content-Type manually for FormData on axios to prevent boundary issues
+
     try {
-      console.log("Submitting Face Verification for Txn:", txnId);
-      const response = await api.post(`/transactions/${txnId}/verify-face/`, formData);
-      return response;
-    } catch (err) {
-      if (err.response) {
-        console.error("Server Error Response:", err.response.data);
+      console.log("Submitting Face Verification (Fetch) for Txn:", txnId);
+      
+      // Native fetch is often more reliable for FormData on mobile
+      const response = await fetch(`${BASE_URL}/transactions/${txnId}/verify-face/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // No Content-Type header - fetch will set it with boundary automatically
+          'Accept': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw { response: { data: data, status: response.status } };
       }
+
+      return { data };
+    } catch (err) {
+      console.error("Face Verification Error:", err);
       throw err;
     }
   },

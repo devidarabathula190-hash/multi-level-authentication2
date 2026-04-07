@@ -34,7 +34,8 @@ export default function LoginScreen({ navigation }) {
   }, []);
 
   const handleLogin = async () => {
-    if (!loginId || !password) {
+    const trimmedLoginId = loginId.trim();
+    if (!trimmedLoginId || !password) {
       Alert.alert("Required", "Please enter your credentials to login.");
       return;
     }
@@ -42,7 +43,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     dispatch(loginStart());
     try {
-      const response = await authService.login({ login_id: loginId, password });
+      const response = await authService.login({ login_id: trimmedLoginId, password });
       const { access, user } = response.data;
       dispatch(loginSuccess({ token: access, user }));
     } catch (error) {

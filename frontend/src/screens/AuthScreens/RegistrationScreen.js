@@ -100,7 +100,7 @@ export default function RegistrationScreen({ navigation }) {
               <View style={styles.inputGrid}>
                 <View style={[styles.inputStack, { flex: 1 }]}>
                     <Text style={styles.label}>SYSTEM LOGIN ID</Text>
-                    <TextInput style={styles.input} placeholder="Unique ID" autoCapitalize="none" value={formData.login_id} onChangeText={(t) => setFormData({...formData, login_id: t})} />
+                    <TextInput style={styles.input} placeholder="Unique ID" autoCapitalize="none" value={formData.login_id} onChangeText={(t) => setFormData({...formData, login_id: t.trim()})} />
                 </View>
                 <View style={[styles.inputStack, { flex: 1, marginLeft: 10 }]}>
                     <Text style={styles.label}>REGISTERED MOBILE</Text>

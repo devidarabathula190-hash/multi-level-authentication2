@@ -156,15 +156,16 @@ SIMPLE_JWT = {
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True # Change in production
 
-# Email Settings (for OTP)
+import os
+# Email Settings (for OTP) - Using environment variables to bypass GitHub Secret Scanning
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'devidarabathula@gmail.com'
-EMAIL_HOST_PASSWORD = 'xqnolupixahmffjc'
-DEFAULT_FROM_EMAIL = 'devidarabathula@gmail.com'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = os.environ.get('BREVO_SMTP_USER', 'devidarabathula@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('BREVO_SMTP_KEY') # Configure this in Render dashboard
+DEFAULT_FROM_EMAIL = os.environ.get('BREVO_SMTP_USER', 'devidarabathula@gmail.com')
 EMAIL_TIMEOUT = 30
 
 # 🔓 DATA LIMITS (For high-res face images)

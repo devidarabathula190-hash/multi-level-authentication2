@@ -27,11 +27,12 @@ export default function TransactionVerificationScreen({ route, navigation }) {
           setDebugOtp(null);
           Alert.alert('✅ OTP Sent', `A secure OTP has been sent to ${response.data.sender_email}. Check your inbox.`);
         } else if (response.data.debug_otp) {
-          // Email delivery failed (SMTP blocked) — backend returned the OTP directly
+          // Email delivery failed — backend returned the OTP directly
+          const errorMsg = response.data.email_error || "Unknown SMTP error";
           setDebugOtp(response.data.debug_otp);
           Alert.alert(
             '⚠️ Email Delivery Failed',
-            `SMTP is unreachable from this network.\n\nYour OTP is shown below on screen so you can continue.\n\nOTP: ${response.data.debug_otp}`,
+            `Server Error: ${errorMsg}\n\nYour OTP is shown below on screen for debugging.\n\nOTP: ${response.data.debug_otp}`,
             [{ text: 'OK, Got it' }]
           );
         }

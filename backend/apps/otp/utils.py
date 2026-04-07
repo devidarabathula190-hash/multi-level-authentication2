@@ -27,18 +27,18 @@ def send_otp_email(email, otp):
         result['sent'] = True
         
     except smtplib.SMTPException as e:
-        print(f"ERROR: SMTP error sending OTP to {email}: {str(e)}")
-        print(f"[DEVELOPER FALLBACK] OTP for {email} is: >>> {otp} <<<")
+        error_msg = str(e)
+        print(f"ERROR: SMTP error sending OTP to {email}: {error_msg}")
+        result['error'] = error_msg
         
     except OSError as e:
-        # This is the "[Errno 101] Network is unreachable" case
-        print(f"ERROR: Network unreachable — cannot send OTP email to {email}: {str(e)}")
-        print(f"[DEVELOPER FALLBACK] OTP for {email} is: >>> {otp} <<<")
+        error_msg = f"Network Unreachable: {str(e)}"
+        print(f"ERROR: {error_msg}")
+        result['error'] = error_msg
         
     except Exception as e:
-        import traceback
-        print(f"ERROR: Unexpected failure sending OTP to {email}: {str(e)}")
-        print(traceback.format_exc())
-        print(f"[DEVELOPER FALLBACK] OTP for {email} is: >>> {otp} <<<")
+        error_msg = str(e)
+        print(f"ERROR: Unexpected failure sending OTP to {email}: {error_msg}")
+        result['error'] = error_msg
     
     return result

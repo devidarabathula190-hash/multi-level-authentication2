@@ -101,9 +101,11 @@ class VerifyFaceTransactionView(generics.GenericAPIView):
                 if email_sent:
                     response_data["message"] = f"Face verified! OTP sent to {user.email}."
                 else:
-                    # Email failed (network unreachable etc.) — expose OTP in response for dev/demo
-                    print(f"WARN: Email delivery failed. Sending OTP in response body for {user.login_id}")
-                    response_data["message"] = f"Email delivery failed. Your OTP is: {otp_record.otp}"
+                    # Email failed — expose specific error for debugging
+                    email_error = email_result.get('error', 'Unknown SMTP error')
+                    print(f"WARN: Email delivery failed for {user.login_id}: {email_error}")
+                    response_data["message"] = f"Email delivery failed! Error: {email_error}"
+                    response_data["email_error"] = email_error
                     response_data["debug_otp"] = otp_record.otp
                 
                 return Response(response_data)

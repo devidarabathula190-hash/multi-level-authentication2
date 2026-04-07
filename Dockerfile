@@ -31,5 +31,5 @@ EXPOSE 8000
 # Run migrations and start gunicorn
 # Run migrations, create an admin user (if doesn't exist), and start gunicorn
 CMD python manage.py migrate && \
-    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin')" && \
+    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(login_id='admin').exists() or User.objects.create_superuser(login_id='admin', email='admin@example.com', name='Admin User', mobile='0000000000', password='admin')" && \
     gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi

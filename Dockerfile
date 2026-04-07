@@ -9,7 +9,6 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Install system dependencies for dlib, opencv and psycopg2
-# dlib needs cmake and build-essential
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -22,12 +21,12 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
+# Install Python dependencies (from backend folder)
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the core project code
-COPY . .
+# Copy the backend code directly (everything inside backend/)
+COPY backend/ .
 
 # Build step: Collect static files (whitenoise will serve them)
 RUN python manage.py collectstatic --no-input
@@ -35,5 +34,5 @@ RUN python manage.py collectstatic --no-input
 # Expose the port (Render or Railway will provide the $PORT env var)
 EXPOSE 8000
 
-# Run the application using gunicorn
+# Run the application
 CMD gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi

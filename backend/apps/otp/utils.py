@@ -12,10 +12,8 @@ def send_otp_email(email, otp):
         from_email = settings.EMAIL_HOST_USER
         recipient_list = [email]
         
-        # Mock sending for debugging - uncomment real sending when SMTP is verified
-        print(f"DEBUG: Mocking email success (No actual mail sent to {email})")
-        # send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-        return True
+        # Real sending re-enabled
+        send_mail(subject, message, from_email, recipient_list, fail_silently=False)
         print(f"SUCCESS: Email sent to {email}")
         return True
     except Exception as e:

@@ -3,11 +3,11 @@ import { store } from '../store';
 import { logout } from '../store/authSlice';
 import { Platform } from 'react-native';
 
-// 👉 Your system IP (updated to match Expo session)
-const API_IP = '172.17.116.185';
+// 👉 Live Render Deployment URL
+const RENDER_URL = 'https://multi-level-authentication2.onrender.com';
 
-// 👉 Use the machine's IP for both real devices & emulator
-export const BASE_URL = `http://${API_IP}:8000/api`;
+// 👉 Use Render URL for production
+export const BASE_URL = `${RENDER_URL}/api`;
 
 // 👉 Create axios instance
 const api = axios.create({

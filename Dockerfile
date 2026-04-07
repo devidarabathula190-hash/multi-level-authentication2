@@ -29,4 +29,7 @@ RUN python manage.py collectstatic --no-input
 EXPOSE 8000
 
 # Run migrations and start gunicorn
-CMD python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi
+# Run migrations, create an admin user (if doesn't exist), and start gunicorn
+CMD python manage.py migrate && \
+    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin')" && \
+    gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi

@@ -88,15 +88,25 @@ class VerifyFaceTransactionView(generics.GenericAPIView):
                     }
                 )
                 
-                # Mock or Real Email dispatch
-                email_sent = send_otp_email(user.email, otp_record.otp)
+                # Try to send email, get back {sent: bool, otp: str}
+                email_result = send_otp_email(user.email, otp_record.otp)
+                email_sent = email_result.get('sent', False)
                 
-                return Response({
+                response_data = {
                     "face_verified": True,
                     "otp_sent": email_sent,
                     "sender_email": user.email,
-                    "message": f"Face verified! (DEBUG OTP: {otp_record.otp}) Check your email." if email_sent else f"Face verified! Your OTP is: {otp_record.otp}"
-                })
+                }
+                
+                if email_sent:
+                    response_data["message"] = f"Face verified! OTP sent to {user.email}."
+                else:
+                    # Email failed (network unreachable etc.) — expose OTP in response for dev/demo
+                    print(f"WARN: Email delivery failed. Sending OTP in response body for {user.login_id}")
+                    response_data["message"] = f"Email delivery failed. Your OTP is: {otp_record.otp}"
+                    response_data["debug_otp"] = otp_record.otp
+                
+                return Response(response_data)
             else:
                 print(f"FAILED: Face mismatch for {user.login_id}")
                 return Response({'face_verified': False, 'message': 'Face does not match our records'}, status=status.HTTP_401_UNAUTHORIZED)

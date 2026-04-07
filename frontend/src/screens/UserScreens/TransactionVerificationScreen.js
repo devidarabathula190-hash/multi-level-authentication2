@@ -13,6 +13,7 @@ export default function TransactionVerificationScreen({ route, navigation }) {
   const [step, setStep] = useState('FACE'); // FACE, OTP, SUCCESS
   const [loading, setLoading] = useState(false);
   const [receiverEmail, setReceiverEmail] = useState('');
+  const [debugOtp, setDebugOtp] = useState(null); // Set when SMTP is blocked
 
   const handleFaceCaptured = async (photo) => {
     setLoading(true);
@@ -20,6 +21,21 @@ export default function TransactionVerificationScreen({ route, navigation }) {
       const response = await transactionService.verifyFace(transaction_id, photo);
       if (response.data.face_verified) {
         setReceiverEmail(response.data.sender_email);
+
+        if (response.data.otp_sent) {
+          // Email delivered successfully
+          setDebugOtp(null);
+          Alert.alert('✅ OTP Sent', `A secure OTP has been sent to ${response.data.sender_email}. Check your inbox.`);
+        } else if (response.data.debug_otp) {
+          // Email delivery failed (SMTP blocked) — backend returned the OTP directly
+          setDebugOtp(response.data.debug_otp);
+          Alert.alert(
+            '⚠️ Email Delivery Failed',
+            `SMTP is unreachable from this network.\n\nYour OTP is shown below on screen so you can continue.\n\nOTP: ${response.data.debug_otp}`,
+            [{ text: 'OK, Got it' }]
+          );
+        }
+
         setStep('OTP');
       }
     } catch (error) {
@@ -84,6 +100,14 @@ export default function TransactionVerificationScreen({ route, navigation }) {
                 <Text style={styles.otpTitle}>Final Handshake Required</Text>
                 <Text style={styles.otpSubtitle}>A secure key has been broadcast to your registered email: {receiverEmail}</Text>
                 
+                {debugOtp && (
+                  <View style={styles.debugTextContainer}>
+                    <Text style={styles.debugLabel}>DEVELOPER DEBUG MODE</Text>
+                    <Text style={styles.debugOtpValue}>FALLBACK OTP: {debugOtp}</Text>
+                    <Text style={styles.debugSubtext}>(Email could not be delivered from this network)</Text>
+                  </View>
+                )}
+
                 <OTPInput onVerify={handleOTPVerify} loading={loading} />
 
                 <TouchableOpacity style={styles.retryBtn} onPress={() => setStep('FACE')}>
@@ -289,10 +313,37 @@ const styles = StyleSheet.create({
   loaderContent: {
       alignItems: 'center',
   },
-  loaderMsg: {
+  loadingMsg: {
       color: '#FFD700',
       fontWeight: '900',
       letterSpacing: 2,
       marginTop: 20,
+  },
+  debugTextContainer: {
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: '#ff4d4d',
+    borderRadius: 15,
+    padding: 15,
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+  debugLabel: {
+    color: '#ff4d4d',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 5,
+  },
+  debugOtpValue: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    letterSpacing: 3,
+  },
+  debugSubtext: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    marginTop: 5,
   }
 });

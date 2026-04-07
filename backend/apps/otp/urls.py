@@ -1,5 +1,6 @@
 from django.urls import path
+from .views import TestEmailView
 
 urlpatterns = [
-    # OTP verification happens within the transactions app logic
+    path('test-email/', TestEmailView.as_view(), name='test-email'),
 ]

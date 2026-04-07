@@ -5,6 +5,7 @@ django-otp
 psycopg2-binary
 # face_recognition
 # opencv-python
+numpy
 pillow
 pyjwt
 python-dotenv

@@ -165,7 +165,7 @@ EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'devidarabathula@gmail.com'
 EMAIL_HOST_PASSWORD = 'xqnolupixahmffjc'
 DEFAULT_FROM_EMAIL = 'devidarabathula@gmail.com'
-EMAIL_TIMEOUT = 20
+EMAIL_TIMEOUT = 30
 
 # 🔓 DATA LIMITS (For high-res face images)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB

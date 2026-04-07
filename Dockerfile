@@ -28,5 +28,5 @@ RUN python manage.py collectstatic --no-input
 # Expose the port (Render or Railway will provide the $PORT env var)
 EXPOSE 8000
 
-# Run the application
-CMD gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi
+# Run migrations and start gunicorn
+CMD python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} project.wsgi

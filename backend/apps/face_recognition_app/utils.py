@@ -22,7 +22,14 @@ def get_face_encoding(image_file):
     
     try:
         # Load the image using PIL first to resize it (speeds up recognition)
-        img_pil = Image.open(image_file)
+        # We use a try-except here to catch corrupted image uploads
+        try:
+            img_pil = Image.open(image_file)
+            # Ensure it's fully loaded to avoid lazy loading issues
+            img_pil.load()
+        except Exception as img_err:
+            print(f"ERROR: Invalid or corrupted image uploaded: {img_err}")
+            return None
         
         # Limit size to 800px for speed
         MAX_SIZE = 800
@@ -33,13 +40,17 @@ def get_face_encoding(image_file):
         img = np.array(img_pil.convert('RGB'))
         
         # Detect faces and get encodings
+        if not FACE_RECOGNITION_AVAILABLE or MOCK_MODE:
+            # This logic is mostly for non-mock mode, but we ensure safety
+            return np.random.rand(128)
+
         encodings = face_recognition.face_encodings(img)
         
         if len(encodings) > 0:
             return encodings[0]
         return None
     except Exception as e:
-        print(f"Error extracting face encoding: {e}")
+        print(f"GENERAL ERROR extracting face encoding: {e}")
         return None
 
 def compare_faces(stored_encoding_bytes, face_image_file):

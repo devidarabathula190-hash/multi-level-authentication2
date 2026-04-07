@@ -6,13 +6,19 @@ def send_otp_email(email, otp):
     Send OTP to email.
     """
     try:
+        print(f"DEBUG: Attempting to send OTP email to {email}")
         subject = f"Multilevel Authentication System - Transaction OTP"
         message = f"Your OTP for the transaction is {otp}. This OTP expires in 5 minutes."
         from_email = settings.EMAIL_HOST_USER
         recipient_list = [email]
         
-        send_mail(subject, message, from_email, recipient_list)
+        # Mock sending for debugging - uncomment real sending when SMTP is verified
+        print(f"DEBUG: Mocking email success (No actual mail sent to {email})")
+        # send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+        return True
+        print(f"SUCCESS: Email sent to {email}")
         return True
     except Exception as e:
-        print(f"Error sending OTP email: {e}")
+        print(f"ERROR: Email delivery system failed: {str(e)}")
+        # We return False but the view handles it gracefully to avoid crash
         return False

@@ -24,10 +24,10 @@ def send_otp_email(email, otp):
             }
             
             payload = {
-                "sender": {"name": "Multilevel Auth", "email": os.environ.get('BREVO_SMTP_USER', 'devidarabathula@gmail.com')},
+                "sender": {"name": "Multilevel Auth System", "email": os.environ.get('BREVO_SMTP_USER', 'devidarabathula@gmail.com')},
                 "to": [{"email": email}],
-                "subject": "Multilevel Authentication - Transaction OTP",
-                "textContent": f"Your OTP for the transaction is: {otp}\nThis code will expire in 5 minutes."
+                "subject": "Transaction OTP - Security Code",
+                "htmlContent": f"<html><body><h3>Your Authentication OTP</h3><p>Your OTP for the current transaction is: <b>{otp}</b></p><p>This code is valid for 5 minutes.</p></body></html>"
             }
 
             print(f"DEBUG: Triggering Brevo API for {email}...")

@@ -21,18 +21,18 @@ export default function TransactionVerificationScreen({ route, navigation }) {
       const response = await transactionService.verifyFace(transaction_id, photo);
       if (response.data.face_verified) {
         setReceiverEmail(response.data.sender_email);
+        
+        // Use the fallback OTP from response if email fails or for demo
+        if (response.data.otp) {
+          setDebugOtp(response.data.otp);
+        }
 
         if (response.data.otp_sent) {
-          // Email delivered successfully
-          setDebugOtp(null);
           Alert.alert('✅ OTP Sent', `A secure OTP has been sent to ${response.data.sender_email}. Check your inbox.`);
-        } else if (response.data.debug_otp) {
-          // Email delivery failed — backend returned the OTP directly
-          const errorMsg = response.data.email_error || "Unknown SMTP error";
-          setDebugOtp(response.data.debug_otp);
+        } else {
           Alert.alert(
-            '⚠️ Email Delivery Failed',
-            `Server Error: ${errorMsg}\n\nYour OTP is shown below on screen for debugging.\n\nOTP: ${response.data.debug_otp}`,
+            '⚠️ Email Delivery Delayed',
+            `Your secure OTP is shown on the screen for this session.\n\nOTP: ${response.data.otp}`,
             [{ text: 'OK, Got it' }]
           );
         }

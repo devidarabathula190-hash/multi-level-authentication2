@@ -95,9 +95,9 @@ class VerifyFaceTransactionView(generics.GenericAPIView):
                     "face_verified": True,
                     "otp_sent": True,
                     "sender_email": user.email,
-                    "message": f"Face verified! OTP sent to {user.email}.",
-                    "debug_otp": otp_record.otp # Developer fallback
-                })
+                    "otp": otp_record.otp,
+                    "message": f"Face verified! OTP sent to {user.email}."
+                }, status=status.HTTP_200_OK)
             else:
                 print(f"FAILED: Face mismatch for {user.login_id}")
                 return Response({'face_verified': False, 'message': 'Face does not match our records'}, status=status.HTTP_401_UNAUTHORIZED)

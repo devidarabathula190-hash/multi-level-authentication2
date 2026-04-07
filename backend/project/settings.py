@@ -80,11 +80,13 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='postgresql://postgres.deyzernqrdfspsnfeetx:Devi@6302103488@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres',
+        conn_max_age=600
+    )
 }
 
 

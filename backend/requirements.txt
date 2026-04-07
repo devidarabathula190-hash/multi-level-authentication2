@@ -13,3 +13,4 @@ django-environ
 whitenoise
 gunicorn
 djangorestframework-simplejwt
+dj-database-url

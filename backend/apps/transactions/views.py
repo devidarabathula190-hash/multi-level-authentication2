@@ -128,16 +128,18 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
             return Response({'error': 'OTP not provided'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            txn = Transaction.objects.select_for_update().get(transaction_id=transaction_id, sender=request.user)
-            otp_record = OTPRecord.objects.get(transaction_id=transaction_id, user=request.user)
-            
-            if otp_record.is_valid(otp):
-                # Transfer money atomically
-                with transaction.atomic():
-                    # Re-fetch from db for atomic update
+            with transaction.atomic():
+                # select_for_update() MUST be inside atomic block for PostgreSQL
+                try:
+                    txn = Transaction.objects.select_for_update().get(transaction_id=transaction_id, sender=request.user)
+                    otp_record = OTPRecord.objects.select_for_update().get(transaction_id=transaction_id, user=request.user)
+                except (Transaction.DoesNotExist, OTPRecord.DoesNotExist):
+                    return Response({'error': 'Transaction or OTP record not found'}, status=status.HTTP_404_NOT_FOUND)
+                
+                if otp_record.is_valid(otp):
+                    # Re-fetch users from db for atomic update
                     sender = User.objects.select_for_update().get(id=request.user.id)
-                    receiver_id = txn.receiver.id
-                    receiver = User.objects.select_for_update().get(id=receiver_id)
+                    receiver = User.objects.select_for_update().get(id=txn.receiver.id)
                     
                     if sender.balance >= txn.amount:
                         sender.balance -= txn.amount
@@ -159,11 +161,14 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
                         txn.status = 'FAILED'
                         txn.save()
                         return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)
                 
-        except (Transaction.DoesNotExist, OTPRecord.DoesNotExist):
-            return Response({'error': 'Transaction or OTP record not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            import traceback
+            print(f"CRITICAL ERROR in OTP Verification: {str(e)}")
+            traceback.print_exc()
+            return Response({'error': 'System error during transfer', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class TransactionHistoryView(generics.ListAPIView):
     serializer_class = TransactionSerializer

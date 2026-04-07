@@ -23,8 +23,7 @@ def send_otp_email(email, otp):
                 message, 
                 from_email, 
                 recipient_list, 
-                fail_silently=False,
-                timeout=30
+                fail_silently=False
             )
             print(f"SUCCESS: OTP email sent to {email}")
         except Exception as e:

@@ -95,7 +95,7 @@ class VerifyFaceTransactionView(generics.GenericAPIView):
                     "face_verified": True,
                     "otp_sent": email_sent,
                     "sender_email": user.email,
-                    "message": "Security key sent to your email!" if email_sent else "Face verified! (Check console for OTP)"
+                    "message": f"Face verified! (DEBUG OTP: {otp_record.otp}) Check your email." if email_sent else f"Face verified! Your OTP is: {otp_record.otp}"
                 })
             else:
                 print(f"FAILED: Face mismatch for {user.login_id}")

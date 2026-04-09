@@ -1,7 +1,4 @@
 import api from './apiService';
-import { Platform } from 'react-native';
-import { store } from '../store';
-import { BASE_URL } from './apiService';
 
 const transactionService = {
   getReceivers: async () => {
@@ -10,73 +7,66 @@ const transactionService = {
   initiate: async (data) => {
     return await api.post('/transactions/initiate/', data);
   },
-  verifyFace: async (txnId, faceData) => {
-    const formData = new FormData();
-    const isWeb = typeof window !== 'undefined' && window.document;
-    const token = store.getState().auth.token;
-
-    const resizeImage = async (base64Str) => {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.src = base64Str;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 400;
-          const MAX_HEIGHT = 400;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.6));
-        };
-      });
-    };
-
-    if (!isWeb && faceData.uri) {
-      formData.append('face_image', {
-        uri: faceData.uri,
-        name: 'face.jpg',
-        type: 'image/jpeg',
-      });
-    } else if (faceData.base64) {
-      let finalBase64 = faceData.base64;
-      if (isWeb) {
-        console.log("Web detected: Resizing image before upload...");
-        finalBase64 = await resizeImage(faceData.base64.startsWith('data:') ? faceData.base64 : `data:image/jpeg;base64,${faceData.base64}`);
-      }
-      formData.append('face_image_base64', finalBase64);
+  // Wakes up the Render free-tier server before a heavy request.
+  // Render sleeps after 15 min of inactivity — first request takes 30-50s to wake.
+  wakeupServer: async () => {
+    try {
+      console.log('Pinging server to wake it up...');
+      await api.get('/health/', { timeout: 60000 });
+      console.log('Server is awake.');
+      return true;
+    } catch (e) {
+      console.warn('Wakeup ping failed:', e.message);
+      return false; // Continue anyway — server might still respond to the real request
     }
+  },
+
+  verifyFace: async (txnId, faceData, onStatusUpdate) => {
+    console.log('Submitting Face Verification for Txn:', txnId);
+
+    // Step 1: Wake up the server first
+    if (onStatusUpdate) onStatusUpdate('Connecting to secure server...');
+    await transactionService.wakeupServer();
+
+    // Step 2: Build the payload
+    if (onStatusUpdate) onStatusUpdate('Preparing biometric data...');
+    let base64Image = faceData.base64 || null;
 
     try {
-      console.log("Submitting Face Verification (Axios) for Txn:", txnId);
-      
-      const config = {
-        headers: {
-          // REMOVED manual Content-Type to let Axios handle boundary
-        },
-        timeout: 60000, // 60s timeout
-      };
+      if (!base64Image) {
+        // Fallback: no base64 — try FormData with URI (less reliable on mobile)
+        console.warn('No base64 in photo — falling back to FormData URI approach');
+        const formData = new FormData();
+        formData.append('face_image', {
+          uri: faceData.uri,
+          name: 'face.jpg',
+          type: 'image/jpeg',
+        });
+        if (onStatusUpdate) onStatusUpdate('Verifying identity...');
+        const response = await api.post(`/transactions/${txnId}/verify-face/`, formData, {
+          timeout: 90000,
+        });
+        return { data: response.data };
+      }
 
-      console.log("Submitting Face Verification (Axios) for Txn:", txnId);
-      const response = await api.post(`/transactions/${txnId}/verify-face/`, formData, config);
+      // Preferred: send as JSON with base64 — avoids multipart upload issues
+      const fullBase64 = base64Image.startsWith('data:')
+        ? base64Image
+        : `data:image/jpeg;base64,${base64Image}`;
+
+      if (onStatusUpdate) onStatusUpdate('Verifying identity...');
+      const response = await api.post(
+        `/transactions/${txnId}/verify-face/`,
+        { face_image_base64: fullBase64 },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 90000, // 90s — Render free tier can be slow to wake
+        }
+      );
       return { data: response.data };
+
     } catch (err) {
-      console.error("Face Verification Error:", err?.response?.data || err.message);
-      // Ensure we pass the error in a consistent format
+      console.error('Face Verification Error:', err?.response?.data || err.message);
       throw err;
     }
   },

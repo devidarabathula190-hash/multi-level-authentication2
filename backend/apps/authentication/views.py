@@ -14,25 +14,23 @@ class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
 
     def post(self, request, *args, **kwargs):
-        log_file = os.path.join(settings.BASE_DIR, 'registration_debug.log')
-        with open(log_file, 'a') as f:
-            f.write(f"\n[{datetime.now()}] DEBUG: Registration attempt for login_id: {request.data.get('login_id')}\n")
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid():
-                try:
-                    user = serializer.save()
-                    f.write(f"[{datetime.now()}] SUCCESS: User {user.id} created.\n")
-                    return Response({
-                        "success": True,
-                        "user_id": user.id,
-                        "message": "Registration successful. Awaiting admin approval."
-                    }, status=status.HTTP_201_CREATED)
-                except Exception as e:
-                    f.write(f"[{datetime.now()}] CRITICAL ERROR: {str(e)}\n")
-                    return Response({"error": "Database error", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            
-            f.write(f"[{datetime.now()}] VALIDATION FAILED: {serializer.errors}\n")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print(f"DEBUG: Registration attempt for login_id: {request.data.get('login_id')}")
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = serializer.save()
+                print(f"SUCCESS: User {user.id} created.")
+                return Response({
+                    "success": True,
+                    "user_id": user.id,
+                    "message": "Registration successful. Awaiting admin approval."
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                print(f"CRITICAL ERROR during registration: {str(e)}")
+                return Response({"error": "Database error", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        print(f"VALIDATION FAILED: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
@@ -43,9 +41,13 @@ class LoginView(generics.GenericAPIView):
         if serializer.is_valid():
             login_id = serializer.validated_data['login_id']
             password = serializer.validated_data['password']
-            user = authenticate(request, login_id=login_id, password=password)
+            print(f"DEBUG: Login attempt for login_id: {login_id}")
+            
+            # Django's authenticate expects 'username' and 'password'
+            user = authenticate(request, username=login_id, password=password)
 
             if user is not None:
+                print(f"SUCCESS: Login successful for {login_id}. Status: {user.status}")
                 if user.status == 'ACTIVE':
                     refresh = RefreshToken.for_user(user)
                     return Response({
@@ -63,5 +65,7 @@ class LoginView(generics.GenericAPIView):
                 else:
                     return Response({'error': 'Your account is inactive. Please contact admin for activation.'}, 
                                      status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"FAIL: Login failed for {login_id}. Invalid credentials.")
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

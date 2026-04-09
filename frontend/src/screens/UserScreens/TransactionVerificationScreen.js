@@ -12,27 +12,36 @@ export default function TransactionVerificationScreen({ route, navigation }) {
   const { transaction_id, receiver, amount } = route.params;
   const [step, setStep] = useState('FACE'); // FACE, OTP, SUCCESS
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');   // Live status shown during loading
   const [receiverEmail, setReceiverEmail] = useState('');
-  const [debugOtp, setDebugOtp] = useState(null); // Set when SMTP is blocked
+  const [debugOtp, setDebugOtp] = useState(null);
+  const [capturedPhoto, setCapturedPhoto] = useState(null); // Keep photo for retry
 
   const handleFaceCaptured = async (photo) => {
+    setCapturedPhoto(photo);
+    await submitFaceVerification(photo);
+  };
+
+  const submitFaceVerification = async (photo) => {
     setLoading(true);
+    setStatusMsg('Connecting to secure server...');
     try {
-      const response = await transactionService.verifyFace(transaction_id, photo);
+      const response = await transactionService.verifyFace(
+        transaction_id,
+        photo,
+        (msg) => setStatusMsg(msg)   // onStatusUpdate callback
+      );
+
       if (response.data.face_verified) {
         setReceiverEmail(response.data.sender_email);
-        
-        // Use the fallback OTP from response if email fails or for demo
-        if (response.data.otp) {
-          setDebugOtp(response.data.otp);
-        }
+        if (response.data.otp) setDebugOtp(response.data.otp);
 
         if (response.data.otp_sent) {
           Alert.alert('✅ OTP Sent', `A secure OTP has been sent to ${response.data.sender_email}. Check your inbox.`);
         } else {
           Alert.alert(
             '⚠️ Email Delivery Delayed',
-            `Your secure OTP is shown on the screen for this session.\n\nOTP: ${response.data.otp}`,
+            `Your secure OTP is shown on the screen.\n\nOTP: ${response.data.otp}`,
             [{ text: 'OK, Got it' }]
           );
         }
@@ -40,15 +49,34 @@ export default function TransactionVerificationScreen({ route, navigation }) {
         setStep('OTP');
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert("Identity Verification Failed", error.response?.data?.message || "Biometric mismatch detected.");
+      const isNetworkError = !error.response;
+      const serverMsg = error.response?.data?.message || error.response?.data?.error;
+
+      // Provide specific guidance based on error type
+      const title = isNetworkError ? '🌐 Server Not Reachable' : '❌ Identity Verification Failed';
+      const msg = isNetworkError
+        ? 'The server may be waking up from sleep (Render free-tier). Please wait 30 seconds and try again.'
+        : serverMsg || 'Biometric mismatch detected. Please try again.';
+
+      Alert.alert(title, msg, [
+        {
+          text: isNetworkError ? 'Retry' : 'Try Again',
+          onPress: () => {
+            // Re-use the already captured photo — no need to re-scan
+            if (capturedPhoto || photo) submitFaceVerification(capturedPhoto || photo);
+          },
+        },
+        { text: 'Re-scan', onPress: () => { setCapturedPhoto(null); setStep('FACE'); }, style: 'cancel' },
+      ]);
     } finally {
       setLoading(false);
+      setStatusMsg('');
     }
   };
 
   const handleOTPVerify = async (otp) => {
     setLoading(true);
+    setStatusMsg('Verifying secure key...');
     try {
       const response = await transactionService.verifyOTP(transaction_id, otp);
       if (response.data.success) {
@@ -58,10 +86,10 @@ export default function TransactionVerificationScreen({ route, navigation }) {
         }, 3000);
       }
     } catch (error) {
-      console.error(error);
       Alert.alert("Authorization Failed", error.response?.data?.error || "Invalid secured OTP.");
     } finally {
       setLoading(false);
+      setStatusMsg('');
     }
   };
 
@@ -140,7 +168,10 @@ export default function TransactionVerificationScreen({ route, navigation }) {
         <View style={styles.loadingOverlay}>
             <View style={styles.loaderContent}>
                  <ActivityIndicator size="large" color="#FFD700" />
-                 <Text style={styles.loaderMsg}>VALIDATING IDENTITY...</Text>
+                 <Text style={styles.loaderMsg}>{statusMsg || 'PROCESSING...'}</Text>
+                 {statusMsg === 'Connecting to secure server...' && (
+                   <Text style={styles.loaderHint}>Render free-tier may take ~30s to wake up</Text>
+                 )}
             </View>
         </View>
       )}
@@ -314,11 +345,19 @@ const styles = StyleSheet.create({
   loaderContent: {
       alignItems: 'center',
   },
-  loadingMsg: {
+  loaderMsg: {
       color: '#FFD700',
       fontWeight: '900',
       letterSpacing: 2,
       marginTop: 20,
+      textAlign: 'center',
+  },
+  loaderHint: {
+      color: 'rgba(255,215,0,0.5)',
+      fontSize: 11,
+      marginTop: 8,
+      textAlign: 'center',
+      letterSpacing: 0.5,
   },
   debugTextContainer: {
     backgroundColor: 'rgba(255, 0, 0, 0.1)',

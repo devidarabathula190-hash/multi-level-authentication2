@@ -114,24 +114,26 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, transaction_id):
+        print(f"DEBUG: RECEIVED OTP Verification Request for TXN: {transaction_id}")
         otp = request.data.get('otp')
         if not otp:
+            print("FAILED: OTP not provided in the request payload.")
             return Response({'error': 'OTP not provided'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
             with transaction.atomic():
-                # select_for_update() MUST be inside atomic block for PostgreSQL
                 try:
                     txn = Transaction.objects.select_for_update().get(transaction_id=transaction_id, sender=request.user)
                     otp_record = OTPRecord.objects.select_for_update().get(transaction_id=transaction_id, user=request.user)
                 except (Transaction.DoesNotExist, OTPRecord.DoesNotExist):
+                    print(f"FAILED: Transaction or OTP record not found for TXN: {transaction_id}")
                     return Response({'error': 'Transaction or OTP record not found'}, status=status.HTTP_404_NOT_FOUND)
                 
                 if otp_record.is_valid(otp):
-                    # Re-fetch users from db for atomic update
                     sender = User.objects.select_for_update().get(id=request.user.id)
                     receiver = User.objects.select_for_update().get(id=txn.receiver.id)
                     
+                    print(f"DEBUG: Sender balance={sender.balance}, Txn amount={txn.amount}")
                     if sender.balance >= txn.amount:
                         sender.balance -= txn.amount
                         receiver.balance += txn.amount
@@ -143,16 +145,19 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
                         otp_record.is_used = True
                         otp_record.save()
                         
+                        print(f"SUCCESS: Transaction {transaction_id} completed successfully.")
                         return Response({
                             "success": True,
                             "transaction_id": txn.transaction_id,
                             "message": "Money transferred successfully"
                         })
                     else:
+                        print(f"FAILED: Insufficient balance. Sender balance: {sender.balance}, Amount: {txn.amount}")
                         txn.status = 'FAILED'
                         txn.save()
                         return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
+                    print(f"FAILED: Invalid or expired OTP for TXN: {transaction_id}")
                     return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)
                 
         except Exception as e:

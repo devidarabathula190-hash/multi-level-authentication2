@@ -54,23 +54,22 @@ class AdminUserActionView(generics.GenericAPIView):
                         {'error': 'Cannot delete staff user'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
+                # Explicitly delete related records first to ensure
+                # no FK constraint blocks the user deletion
                 try:
                     from apps.face_recognition_app.models import FaceData
                     from apps.otp.models import OTPRecord
                     from apps.transactions.models import Transaction
-                    # Delete all related records first (belt and suspenders over CASCADE)
-                    FaceData.objects.filter(user=user).delete()
-                    OTPRecord.objects.filter(user=user).delete()
-                    Transaction.objects.filter(sender=user).delete()
-                    Transaction.objects.filter(receiver=user).delete()
-                    print(f"DEBUG DELETE: Related data cleaned for user '{user.login_id}'")
-                    login_id = user.login_id
-                    user.delete()
-                    print(f"SUCCESS: User '{login_id}' permanently deleted from database.")
-                    return Response({'success': True, 'message': f'User {login_id} deleted successfully'})
-                except Exception as del_err:
-                    print(f"CRITICAL: User delete failed for {user.login_id}: {del_err}")
-                    return Response({'error': f'Delete failed: {str(del_err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    deleted_face = FaceData.objects.filter(user=user).delete()
+                    deleted_otp = OTPRecord.objects.filter(user=user).delete()
+                    print(f"DEBUG DELETE: Cleaned up face={deleted_face}, otp={deleted_otp} for user {user.login_id}")
+                except Exception as cleanup_err:
+                    print(f"WARN: Cleanup error (non-fatal): {cleanup_err}")
+
+                login_id = user.login_id
+                user.delete()
+                print(f"SUCCESS: User '{login_id}' permanently deleted.")
+                return Response({'success': True, 'message': f'User {login_id} deleted successfully'})
 
             else:
                 return Response(

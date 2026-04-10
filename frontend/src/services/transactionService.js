@@ -71,7 +71,14 @@ const transactionService = {
     }
   },
   verifyOTP: async (txnId, otp) => {
-    return await api.post(`/transactions/${txnId}/verify-otp/`, { otp });
+    try {
+      await transactionService.wakeupServer(); // ensure server is awake
+      const response = await api.post(`/transactions/${txnId}/verify-otp/`, { otp });
+      return response;
+    } catch (err) {
+      console.error('OTP Verify Error:', err?.response?.data || err.message);
+      throw err;
+    }
   },
   getHistory: async () => {
     return await api.get('/transactions/history/');

@@ -110,7 +110,7 @@ export default function RegistrationScreen({ navigation }) {
 
               <View style={styles.inputStack}>
                  <Text style={styles.label}>SECURED EMAIL</Text>
-                 <TextInput style={styles.input} placeholder="email@provider.com" value={formData.email} onChangeText={(t) => setFormData({...formData, email: t})} />
+                 <TextInput style={styles.input} placeholder="email@provider.com" autoCapitalize="none" value={formData.email} onChangeText={(t) => setFormData({...formData, email: t.trim()})} />
               </View>
 
               <View style={styles.inputStack}>

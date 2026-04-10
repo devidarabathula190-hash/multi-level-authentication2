@@ -134,18 +134,19 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
                 
                 if otp_record.is_valid(otp):
                     sender = User.objects.select_for_update().get(id=request.user.id)
-                    # Removed balance checking as per user request to allow any amount
+                    receiver = User.objects.select_for_update().get(id=txn.receiver.id)  # was missing!
+                    # Balance check removed — allow any amount
                     sender.balance -= txn.amount
                     receiver.balance += txn.amount
                     sender.save()
                     receiver.save()
-                    
+
                     txn.status = 'COMPLETED'
                     txn.save()
                     otp_record.is_used = True
                     otp_record.save()
-                    
-                    print(f"SUCCESS: Transaction {transaction_id} completed successfully (Amount restriction disabled).")
+
+                    print(f"SUCCESS: Transaction {transaction_id} completed (₹{txn.amount} from {sender.login_id} → {receiver.login_id}).")
                     return Response({
                         "success": True,
                         "transaction_id": txn.transaction_id,

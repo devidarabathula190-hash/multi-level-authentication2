@@ -131,31 +131,23 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
                 
                 if otp_record.is_valid(otp):
                     sender = User.objects.select_for_update().get(id=request.user.id)
-                    receiver = User.objects.select_for_update().get(id=txn.receiver.id)
+                    # Removed balance checking as per user request to allow any amount
+                    sender.balance -= txn.amount
+                    receiver.balance += txn.amount
+                    sender.save()
+                    receiver.save()
                     
-                    print(f"DEBUG: Sender balance={sender.balance}, Txn amount={txn.amount}")
-                    if sender.balance >= txn.amount:
-                        sender.balance -= txn.amount
-                        receiver.balance += txn.amount
-                        sender.save()
-                        receiver.save()
-                        
-                        txn.status = 'COMPLETED'
-                        txn.save()
-                        otp_record.is_used = True
-                        otp_record.save()
-                        
-                        print(f"SUCCESS: Transaction {transaction_id} completed successfully.")
-                        return Response({
-                            "success": True,
-                            "transaction_id": txn.transaction_id,
-                            "message": "Money transferred successfully"
-                        })
-                    else:
-                        print(f"FAILED: Insufficient balance. Sender balance: {sender.balance}, Amount: {txn.amount}")
-                        txn.status = 'FAILED'
-                        txn.save()
-                        return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+                    txn.status = 'COMPLETED'
+                    txn.save()
+                    otp_record.is_used = True
+                    otp_record.save()
+                    
+                    print(f"SUCCESS: Transaction {transaction_id} completed successfully (Amount restriction disabled).")
+                    return Response({
+                        "success": True,
+                        "transaction_id": txn.transaction_id,
+                        "message": "Money transferred successfully"
+                    })
                 else:
                     print(f"FAILED: Invalid or expired OTP for TXN: {transaction_id}")
                     return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)

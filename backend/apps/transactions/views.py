@@ -20,10 +20,10 @@ class InitiateTransactionView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         data = request.data.copy()
         data['sender'] = request.user.id
+        print(f"DEBUG INITIATE: Incoming data = {dict(data)}")
         
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
-            # Generate pending transaction
             txn_id = f"TXN-{uuid.uuid4().hex[:10].upper()}"
             txn = Transaction.objects.create(
                 sender=request.user,
@@ -33,11 +33,14 @@ class InitiateTransactionView(generics.CreateAPIView):
                 transaction_id=txn_id,
                 status='PENDING'
             )
+            print(f"SUCCESS: Transaction {txn_id} initiated.")
             return Response({
                 "transaction_id": txn.transaction_id,
                 "status": txn.status,
                 "id": txn.id
             }, status=status.HTTP_201_CREATED)
+        
+        print(f"VALIDATION FAILED (initiate): {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyFaceTransactionView(generics.GenericAPIView):

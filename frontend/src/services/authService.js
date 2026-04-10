@@ -11,9 +11,11 @@ const authService = {
     
     return await api.post('/auth/register/', userData, { headers });
   },
-  registerJson: async (userData) => {
+  // JSON-based registration for mobile (avoids ERR_NETWORK from multipart)
+  registerJSON: async (userData) => {
     return await api.post('/auth/register/', userData, {
       headers: { 'Content-Type': 'application/json' },
+      timeout: 90000,
     });
   },
   login: async (credentials) => {

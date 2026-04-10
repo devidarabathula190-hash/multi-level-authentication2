@@ -15,7 +15,8 @@ export default function RegistrationScreen({ navigation }) {
     address: '',
     password: '',
   });
-  const [faceImage, setFaceImage] = useState(null);
+  const [faceImage, setFaceImage] = useState(null);      // URI for preview
+  const [faceImageBase64, setFaceImageBase64] = useState(null); // base64 for upload
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -26,7 +27,8 @@ export default function RegistrationScreen({ navigation }) {
   }, []);
 
   const handleFaceCaptured = (photo) => {
-    setFaceImage(photo.uri);
+    setFaceImage(photo.uri);             // for preview image
+    setFaceImageBase64(photo.base64 || null); // for mobile upload
   };
 
   const handleSubmit = async () => {
@@ -42,24 +44,39 @@ export default function RegistrationScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const data = new FormData();
-      Object.keys(formData).forEach(key => data.append(key, formData[key]));
-      
+      let payload;
+
       if (Platform.OS === 'web') {
+        // Web: use multipart FormData (blob works on web)
+        const data = new FormData();
+        Object.keys(formData).forEach(key => data.append(key, formData[key]));
         const response = await fetch(faceImage);
         const blob = await response.blob();
         data.append('face_image', blob, 'reg_face.jpg');
+        payload = data;
+        await authService.register(payload);
       } else {
-        data.append('face_image', {
-          uri: faceImage,
-          name: 'face.jpg',
-          type: 'image/jpeg',
-        });
+        // Mobile: send as JSON with base64 to avoid ERR_NETWORK on multipart
+        const base64 = faceImageBase64
+          ? `data:image/jpeg;base64,${faceImageBase64}`
+          : null;
+
+        if (!base64) {
+          Alert.alert("Camera Error", "Face image not captured properly. Please re-scan.");
+          setLoading(false);
+          return;
+        }
+
+        payload = {
+          ...formData,
+          face_image_base64: base64,
+        };
+        await authService.registerJSON(payload);
       }
 
-      await authService.register(data);
-      // Auto navigate to login
-      navigation.navigate('Login');
+      Alert.alert("✅ Success", "Registration successful! You can now login.", [
+        { text: "Login", onPress: () => navigation.navigate('Login') }
+      ]);
     } catch (error) {
       console.error("DEBUG REG ERROR:", error);
       const bErr = error.response?.data;

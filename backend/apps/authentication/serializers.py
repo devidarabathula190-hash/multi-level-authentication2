@@ -25,7 +25,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
                 face_image = base64_to_file(face_image_base64)
 
             user = User.objects.create_user(**validated_data, password=password)
-            user.status = 'INACTIVE' # Set to inactive awaiting admin approval
+            user.status = 'ACTIVE'  # Auto-activate for demo — admin can deactivate if needed
             user.save()
 
             # Handle face data if provided

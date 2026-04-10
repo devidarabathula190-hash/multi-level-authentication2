@@ -133,24 +133,17 @@ class VerifyOTPTransactionView(generics.GenericAPIView):
                     return Response({'error': 'Transaction or OTP record not found'}, status=status.HTTP_404_NOT_FOUND)
                 
                 if otp_record.is_valid(otp):
-                    sender = User.objects.select_for_update().get(id=request.user.id)
-                    receiver = User.objects.select_for_update().get(id=txn.receiver.id)  # was missing!
-                    # Balance check removed — allow any amount
-                    sender.balance -= txn.amount
-                    receiver.balance += txn.amount
-                    sender.save()
-                    receiver.save()
-
+                    # Balance updates skipped — user confirmed balance not relevant for this project
                     txn.status = 'COMPLETED'
                     txn.save()
                     otp_record.is_used = True
                     otp_record.save()
 
-                    print(f"SUCCESS: Transaction {transaction_id} completed (₹{txn.amount} from {sender.login_id} → {receiver.login_id}).")
+                    print(f"SUCCESS: Transaction {transaction_id} COMPLETED (₹{txn.amount}).")
                     return Response({
                         "success": True,
                         "transaction_id": txn.transaction_id,
-                        "message": "Money transferred successfully"
+                        "message": "Transaction completed successfully!"
                     })
                 else:
                     print(f"FAILED: Invalid or expired OTP for TXN: {transaction_id}")

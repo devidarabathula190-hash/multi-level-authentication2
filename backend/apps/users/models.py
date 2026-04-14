@@ -39,7 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     address = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='INACTIVE')
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=10000.00) # Default balance for demo
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=25000.00) # Increased default balance for demo
     created_at = models.DateTimeField(auto_now_add=True)
     
     # Required for custom user models

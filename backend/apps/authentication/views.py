@@ -59,7 +59,8 @@ class LoginView(generics.GenericAPIView):
                             'login_id': user.login_id,
                             'email': user.email,
                             'status': user.status,
-                            'is_staff': user.is_staff
+                            'is_staff': user.is_staff,
+                            'balance': user.balance
                         }
                     })
                 else:
